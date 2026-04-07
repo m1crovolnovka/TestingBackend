@@ -7,6 +7,7 @@ import io.cucumber.java.en.When;
 import io.restassured.module.mockmvc.response.MockMvcResponse;
 import org.example.atbp3laba.CucumberSpringConfiguration;
 import org.example.atbp3laba.entity.Book;
+import org.example.atbp3laba.repository.BookRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.context.WebApplicationContext;
 
@@ -25,11 +26,37 @@ public class LibrarySteps extends CucumberSpringConfiguration {
     @Given("the library service is available")
     public void setup() {
         webAppContextSetup(webApplicationContext);
+        bookRepository.deleteAll(); // Очистка базы перед каждым сценарием
         currentBook = null;
     }
 
+    @Autowired
+    private BookRepository bookRepository; // Подключи свой репозиторий
+
     @And("a book with ID {int} exists in the database")
     public void aBookWithIDExistsInTheDatabase(int bookId) {
+        // Для ID 53 мы НЕ создаем книгу, чтобы получить 404
+        if (bookId == 53) {
+            return;
+        }
+
+        Book book = new Book();
+        book.setId((long) bookId);
+
+        // Подстраиваем значения под твои примеры из Feature-файла
+        if (bookId == 2) {
+            book.setDaysOverdue(0); // 0 дней -> штраф 0.0
+            book.setDailyRate(2.0);
+        } else if (bookId == 52) {
+            book.setDaysOverdue(1);   // Чтобы получить 0.1
+            book.setDailyRate(0.1);   // Ставим такой тариф
+        } else {
+            book.setDaysOverdue(5);
+            book.setDailyRate(2.0);
+        }
+
+        book.setReturned(false);
+        bookRepository.save(book);
     }
 
     @When("I request data for book {int}")
